@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:security="http://www.springframework.org/schema/security"
+    xmlns:p="http://www.springframework.org/schema/p"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans 
+						http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
+						http://www.springframework.org/schema/security 
+						http://www.springframework.org/schema/security/spring-security-3.1.xsd">
+ 
+ 	<!-- Security configuration -->
+    <security:http auto-config="false" use-expressions="true" entry-point-ref="authenticationEntryPoint"> 
+        <!-- defines access to corresponding pages: 
+             - common user got only ROLE_USER,
+             - package admin got ROLE_USER, and ROLE_PACKAGE_ADMIN,
+             - admin got ROLE_USER, ROLE_PACKAGE_ADMIN and ROLE_ADMIN,
+             - not logged in haven't got any roles -->
+        <security:intercept-url pattern="/home"       access="permitAll" />
+        <security:intercept-url pattern="/sign_in"    access="permitAll" />  
+        <security:intercept-url pattern="/update"    access="permitAll" />
+        <security:intercept-url pattern="/update/*"    access="permitAll" />
+        <security:intercept-url pattern="/updates/*"  access="hasRole('ROLE_USER')" />
+        <security:intercept-url pattern="/users/*"    access="hasRole('ROLE_ADMIN')" />
+        <security:intercept-url pattern="/packages/*" access="hasRole('ROLE_PACKAGE_ADMIN')" />
+        <security:intercept-url pattern="/programs" access="hasRole('ROLE_USER')" />
+        <security:intercept-url pattern="/programs/add" access="hasRole('ROLE_PACKAGE_ADMIN')" />
+        <security:intercept-url pattern="/programs/edit" access="hasRole('ROLE_PACKAGE_ADMIN')" />
+        <security:intercept-url pattern="/programs/delete" access="hasRole('ROLE_PACKAGE_ADMIN')" />
+        <security:intercept-url pattern="/updates"   access="hasRole('ROLE_USER')" />
+        <security:intercept-url pattern="/users"     access="hasRole('ROLE_ADMIN')" />
+        <security:intercept-url pattern="/changepw"     access="hasRole('ROLE_USER')" />
+        <security:intercept-url pattern="/packages"  access="hasRole('ROLE_USER')" />
+        
+        <!-- form is used to sign in -->
+        <security:custom-filter ref="authenticationFilter" position="FORM_LOGIN_FILTER"/>
+         
+        <!-- /logout url is used to sign out -->
+        <security:logout logout-success-url="/" logout-url="/logout" />
+    </security:http>
+    
+    <bean id="authenticationFilter" class="org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter"
+    	p:authenticationManager-ref="bCryptAuthenticationManager"
+    	p:authenticationFailureHandler-ref="customAuthenticationFailureHandler"
+    	p:authenticationSuccessHandler-ref="customAuthenticationSuccessHandler" />
+    	
+    <!-- defines BCryptAuthenticationManager as authentication manager -->
+    <bean id="bCryptAuthenticationManager" class="com.autoupdater.server.models.BCryptAuthenticationManager" />
+    
+    <!-- defines which page is displayed on sign in error -->
+    <bean id="customAuthenticationFailureHandler" class="org.springframework.security.web.authentication.SimpleUrlAuthenticationFailureHandler"
+		p:defaultFailureUrl="/sign_in?error=true" />
+		
+	<!-- defines which page is displayed on sign in success-->
+    <bean id="customAuthenticationSuccessHandler" class="org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler"
+   		p:defaultTargetUrl="/programs" />
+   		
+   	<!-- defines which page is used as sign in form -->
+   	<bean id="authenticationEntryPoint" class="org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint"
+		p:loginFormUrl="/sign_in"/>
+		
+	<security:authentication-manager />
+     
+</beans>

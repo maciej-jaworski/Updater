@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans" 
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:task="http://www.springframework.org/schema/task"
+    xsi:schemaLocation="http://www.springframework.org/schema/beans 
+        http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
+		http://www.springframework.org/schema/task
+		http://www.springframework.org/schema/task/spring-task-3.0.xsd">
+    
+    <!-- specifies database connection -->  
+    <bean id="dataSource" class="org.springframework.jdbc.datasource.DriverManagerDataSource"> 
+ 		<property name="driverClassName" value="com.mysql.jdbc.Driver" /> 
+        <property name="url" value="<!-- insert database address here --> " /> 
+        <property name="username" value="<!-- insert database username here --> " /> 
+        <property name="password" value="<!-- insert database password here --> " /> 
+    </bean>
+    
+    
+    <!-- models' data access objects -->
+    
+    <!-- specifies class responsible for implementation of userDao -->
+    <bean id="userDao" class="com.autoupdater.server.models.JdbcUserDao"> 
+        <property name="dataSource" ref="dataSource" /> 
+    </bean>
+    
+    <!-- specifies class responsible for implementation of pakageDao -->
+    <bean id="packageDao" class="com.autoupdater.server.models.JdbcPackageDao"> 
+        <property name="dataSource" ref="dataSource" /> 
+    </bean> 
+    
+     <!-- specifies class responsible for implementation of programDao -->
+    <bean id="programDao" class="com.autoupdater.server.models.JdbcProgramDao"> 
+        <property name="dataSource" ref="dataSource" /> 
+    </bean> 
+    
+    <!-- specifies class responsible for implementation of updateDao -->
+    <bean id="updateDao" class="com.autoupdater.server.models.JdbcUpdateDao"> 
+        <property name="dataSource" ref="dataSource" /> 
+    </bean> 
+
+	<!-- specifies class responsible for storing cache -->
+	<bean id="cacheStorage" class="com.autoupdater.server.singletons.CacheStorage">
+		<!-- sets UpdateDao used by CacheStorage to obtain output -->
+		<property name="updateDao" ref="updateDao" />
+		<!-- sets maximal amount of cached object kept after cleaning -->
+		<property name="maxKeep" value="25" />
+		<!-- sets number of cleaning cycles after which request list is reset -->
+		<property name="resetCounter" value="20" />
+		<!-- sets maximal amount of JMV used memory in bytes, above which runCleanup() is called
+			- 0 for disable,
+			- includes memory used up by server and every other program in JVM -->
+		<property name="maxMemory" value="4294967296" />
+	</bean>
+	
+	
+	<!-- scheduled tasks -->
+	
+	<!-- specifies run tasks -->
+	<task:scheduled-tasks scheduler="taskScheduler">
+		<!-- runs CacheStorage.runCleaner() -->
+		<task:scheduled ref="cacheStorage" method="runCleanup" cron="*/5 * * * * ?" />
+	</task:scheduled-tasks>
+	
+	<!-- defines a ThreadPoolTaskScheduler instance with configurable pool size. -->
+	<task:scheduler id="taskScheduler" pool-size="1" /> 
+</beans>
